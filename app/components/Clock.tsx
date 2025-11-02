@@ -201,9 +201,14 @@ export default function PixelClock({ isActive, pixelIndex, totalCols, totalRows,
     targetHourAngle = connectedDirections.hourAngle;
     targetMinuteAngle = connectedDirections.minuteAngle;
   } else {
-    // 검은색 픽셀: 움직이지 않음 (현재 각도 유지)
-    targetHourAngle = currentHourAngleRef.current;
-    targetMinuteAngle = currentMinuteAngleRef.current;
+    // 검은색 픽셀: 시계 7시 방향을 가리킴
+    // 12시 = 270도 (보정 전), 7시는 12시에서 210도 시계방향 회전 = 60도 (보정 전)
+    // 보정 후 = 60 + 90 = 150도
+    // 하지만 코드에서 위쪽이 270도이고 보정이 +90도이므로
+    // 시계 7시 = 270 - 210 = 60도 (보정 전) = 150도 (보정 후)
+    const sevenOClockAngle = (270 - 210 + 90) % 360; // 150도
+    targetHourAngle = sevenOClockAngle;
+    targetMinuteAngle = sevenOClockAngle;
   }
 
   // 부드러운 각도 전환 (보간)
@@ -241,46 +246,46 @@ export default function PixelClock({ isActive, pixelIndex, totalCols, totalRows,
   return (
     <div className="relative inline-block">
       <svg width="50" height="50" viewBox="0 0 20 20" className="relative">
-        {/* 원형 시계 배경 */}
+        {/* 원형 시계 배경 - 반 고흐 '별이 빛나는 밤' 색상 */}
         <circle
           cx="10"
           cy="10"
           r="9"
-          fill={isActive ? "#0066ff" : "#000000"}
-          stroke={isActive ? "#0066ff" : "#333333"}
+          fill={isActive ? "#2C5282" : "#0F172A"}
+          stroke={isActive ? "#3B82F6" : "#1E293B"}
           strokeWidth="0.3"
         />
 
-        {/* 시침 (밝은 색) - 인접한 파란색 픽셀까지 연결되도록 길게 */}
+        {/* 시침 - 반 고흐 작품의 금색/노란색 */}
         <line
           x1="10"
           y1="10"
           x2="10"
           y2={isActive && digitGroup !== null ? "2" : "6"}
-          stroke="#ffffff"
+          stroke="#F59E0B"
           strokeWidth="0.8"
           strokeLinecap="round"
           transform={`rotate(${hourAngle} 10 10)`}
         />
 
-        {/* 분침 (밝은 색) - 인접한 파란색 픽셀까지 연결되도록 길게 */}
+        {/* 분침 - 반 고흐 작품의 금색/노란색 */}
         <line
           x1="10"
           y1="10"
           x2="10"
           y2={isActive && digitGroup !== null ? "2" : "4"}
-          stroke="#ffffff"
+          stroke="#FBBF24"
           strokeWidth="0.6"
           strokeLinecap="round"
           transform={`rotate(${minuteAngle} 10 10)`}
         />
 
-        {/* 중심점 (밝은 색) */}
+        {/* 중심점 - 반 고흐 작품의 금색 */}
         <circle
           cx="10"
           cy="10"
           r="0.6"
-          fill="#ffffff"
+          fill="#F59E0B"
         />
       </svg>
     </div>

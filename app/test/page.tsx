@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import PixelClock from './components/Clock';
+import { useState } from 'react';
+import PixelClock from '../components/Clock';
 
 // 4x7 그리드로 숫자 패턴 정의 (7-segment 스타일)
 const digitPatterns: { [key: string]: boolean[] } = {
@@ -95,119 +95,58 @@ const digitPatterns: { [key: string]: boolean[] } = {
     false, false, false, true,
     true, true, true, true,
   ],
-  ':': [
-    false,
-    false,
-    true,
-    false,
-    true,
-    false,
-    false,
-  ],
 };
 
 function getDigitPattern(digit: string): boolean[] {
   return digitPatterns[digit] || [];
 }
 
-export default function DigitalClock() {
-  const [time, setTime] = useState(new Date());
+export default function TestPage() {
+  const [currentDigit, setCurrentDigit] = useState(0);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTime(new Date());
-    }, 1000);
+  const handleNext = () => {
+    setCurrentDigit((prev) => (prev + 1) % 10);
+  };
 
-    return () => clearInterval(timer);
-  }, []);
+  // 4x7 그리드 (총 28개)
+  const displayPixels: boolean[] = new Array(28).fill(false);
 
-  const hours = time.getHours().toString().padStart(2, '0');
-  const minutes = time.getMinutes().toString().padStart(2, '0');
+  // 현재 숫자 패턴 가져오기
+  const digitPattern = getDigitPattern(currentDigit.toString());
 
-  // 시간 문자열: "HH:MM"
-  const timeChars = [hours[0], hours[1], ':', minutes[0], minutes[1]];
-
-  // 21x7 그리드 (총 147개) - 각 숫자가 4x7, 숫자 사이 공백 1열, 콜론 1열, 콜론 왼쪽 공백 1열
-  // 배치: [숫자1(4열)][공백(1열)][숫자2(4열)][공백(1열)][콜론(1열)][공백(1열)][숫자3(4열)][공백(1열)][숫자4(4열)]
-  const displayPixels: boolean[] = new Array(147).fill(false);
-
-  let currentCol = 0;
-
-  // 첫 번째 숫자 (시의 10의 자리) - 4열
-  const digit1 = getDigitPattern(timeChars[0]);
+  // 패턴을 displayPixels에 적용
   for (let row = 0; row < 7; row++) {
     for (let col = 0; col < 4; col++) {
-      const index = row * 21 + (currentCol + col);
-      displayPixels[index] = digit1[row * 4 + col];
-    }
-  }
-  currentCol += 4;
-
-  // 공백 - 1열
-  currentCol += 1;
-
-  // 두 번째 숫자 (시의 1의 자리) - 4열
-  const digit2 = getDigitPattern(timeChars[1]);
-  for (let row = 0; row < 7; row++) {
-    for (let col = 0; col < 4; col++) {
-      const index = row * 21 + (currentCol + col);
-      displayPixels[index] = digit2[row * 4 + col];
-    }
-  }
-  currentCol += 4;
-
-  // 공백 - 1열 (콜론 왼쪽)
-  currentCol += 1;
-
-  // 콜론 - 1열
-  const colon = getDigitPattern(timeChars[2]);
-  for (let row = 0; row < 7; row++) {
-    const index = row * 21 + currentCol;
-    displayPixels[index] = colon[row];
-  }
-  currentCol += 1;
-
-  // 공백 - 1열
-  currentCol += 1;
-
-  // 세 번째 숫자 (분의 10의 자리) - 4열
-  const digit3 = getDigitPattern(timeChars[3]);
-  for (let row = 0; row < 7; row++) {
-    for (let col = 0; col < 4; col++) {
-      const index = row * 21 + (currentCol + col);
-      displayPixels[index] = digit3[row * 4 + col];
-    }
-  }
-  currentCol += 4;
-
-  // 공백 - 1열
-  currentCol += 1;
-
-  // 네 번째 숫자 (분의 1의 자리) - 4열
-  const digit4 = getDigitPattern(timeChars[4]);
-  for (let row = 0; row < 7; row++) {
-    for (let col = 0; col < 4; col++) {
-      const index = row * 21 + (currentCol + col);
-      displayPixels[index] = digit4[row * 4 + col];
+      const index = row * 4 + col;
+      displayPixels[index] = digitPattern[row * 4 + col];
     }
   }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <h1 className="text-4xl font-bold mb-8 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]">Digital Clock</h1>
-      <div className="grid gap-1" style={{ gridTemplateColumns: 'repeat(21, minmax(0, 1fr))' }}>
+      <h1 className="text-4xl font-bold mb-8 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]">Test Clock</h1>
+      <div className="grid gap-1" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
         {displayPixels.map((isActive, index) => (
           <PixelClock
             key={index}
             isActive={isActive}
             pixelIndex={index}
-            totalCols={21}
+            totalCols={4}
             totalRows={7}
             pixelMap={displayPixels}
           />
         ))}
       </div>
-      <p className="mt-8 text-lg text-amber-300/80">Current Time: {hours}:{minutes}</p>
+      <div className="mt-8 flex flex-col items-center gap-4">
+        <p className="text-lg text-amber-300/80">Current Digit: {currentDigit}</p>
+        <button
+          onClick={handleNext}
+          className="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold rounded-lg transition-colors shadow-lg shadow-amber-500/50"
+        >
+          Next Digit
+        </button>
+      </div>
     </main>
   );
 }
+
