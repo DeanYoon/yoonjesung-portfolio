@@ -1,65 +1,213 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useEffect, useState } from 'react';
+import PixelClock from './components/Clock';
+
+// 4x7 그리드로 숫자 패턴 정의 (7-segment 스타일)
+const digitPatterns: { [key: string]: boolean[] } = {
+  '0': [
+    true, true, true, true,
+    true, false, false, true,
+    true, false, false, true,
+    true, false, false, true,
+    true, false, false, true,
+    true, false, false, true,
+    true, true, true, true,
+  ],
+  '1': [
+    false, false, true, false,
+    false, true, true, false,
+    false, false, true, false,
+    false, false, true, false,
+    false, false, true, false,
+    false, false, true, false,
+    false, true, true, true,
+  ],
+  '2': [
+    true, true, true, true,
+    false, false, false, true,
+    false, false, false, true,
+    true, true, true, true,
+    true, false, false, false,
+    true, false, false, false,
+    true, true, true, true,
+  ],
+  '3': [
+    true, true, true, true,
+    false, false, false, true,
+    false, false, false, true,
+    true, true, true, true,
+    false, false, false, true,
+    false, false, false, true,
+    true, true, true, true,
+  ],
+  '4': [
+    true, false, false, true,
+    true, false, false, true,
+    true, false, false, true,
+    true, true, true, true,
+    false, false, false, true,
+    false, false, false, true,
+    false, false, false, true,
+  ],
+  '5': [
+    true, true, true, true,
+    true, false, false, false,
+    true, false, false, false,
+    true, true, true, true,
+    false, false, false, true,
+    false, false, false, true,
+    true, true, true, true,
+  ],
+  '6': [
+    true, true, true, true,
+    true, false, false, false,
+    true, false, false, false,
+    true, true, true, true,
+    true, false, false, true,
+    true, false, false, true,
+    true, true, true, true,
+  ],
+  '7': [
+    true, true, true, true,
+    false, false, false, true,
+    false, false, false, true,
+    false, false, false, true,
+    false, false, false, true,
+    false, false, false, true,
+    false, false, false, true,
+  ],
+  '8': [
+    true, true, true, true,
+    true, false, false, true,
+    true, false, false, true,
+    true, true, true, true,
+    true, false, false, true,
+    true, false, false, true,
+    true, true, true, true,
+  ],
+  '9': [
+    true, true, true, true,
+    true, false, false, true,
+    true, false, false, true,
+    true, true, true, true,
+    false, false, false, true,
+    false, false, false, true,
+    true, true, true, true,
+  ],
+  ':': [
+    false,
+    false,
+    true,
+    false,
+    true,
+    false,
+    false,
+  ],
+};
+
+function getDigitPattern(digit: string): boolean[] {
+  return digitPatterns[digit] || [];
+}
+
+export default function DigitalClock() {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const hours = time.getHours().toString().padStart(2, '0');
+  const minutes = time.getMinutes().toString().padStart(2, '0');
+
+  // 시간 문자열: "HH:MM"
+  const timeChars = [hours[0], hours[1], ':', minutes[0], minutes[1]];
+
+  // 21x7 그리드 (총 147개) - 각 숫자가 4x7, 숫자 사이 공백 1열, 콜론 1열, 콜론 왼쪽 공백 1열
+  // 배치: [숫자1(4열)][공백(1열)][숫자2(4열)][공백(1열)][콜론(1열)][공백(1열)][숫자3(4열)][공백(1열)][숫자4(4열)]
+  const displayPixels: boolean[] = new Array(147).fill(false);
+
+  let currentCol = 0;
+
+  // 첫 번째 숫자 (시의 10의 자리) - 4열
+  const digit1 = getDigitPattern(timeChars[0]);
+  for (let row = 0; row < 7; row++) {
+    for (let col = 0; col < 4; col++) {
+      const index = row * 21 + (currentCol + col);
+      displayPixels[index] = digit1[row * 4 + col];
+    }
+  }
+  currentCol += 4;
+
+  // 공백 - 1열
+  currentCol += 1;
+
+  // 두 번째 숫자 (시의 1의 자리) - 4열
+  const digit2 = getDigitPattern(timeChars[1]);
+  for (let row = 0; row < 7; row++) {
+    for (let col = 0; col < 4; col++) {
+      const index = row * 21 + (currentCol + col);
+      displayPixels[index] = digit2[row * 4 + col];
+    }
+  }
+  currentCol += 4;
+
+  // 공백 - 1열 (콜론 왼쪽)
+  currentCol += 1;
+
+  // 콜론 - 1열
+  const colon = getDigitPattern(timeChars[2]);
+  for (let row = 0; row < 7; row++) {
+    const index = row * 21 + currentCol;
+    displayPixels[index] = colon[row];
+  }
+  currentCol += 1;
+
+  // 공백 - 1열
+  currentCol += 1;
+
+  // 세 번째 숫자 (분의 10의 자리) - 4열
+  const digit3 = getDigitPattern(timeChars[3]);
+  for (let row = 0; row < 7; row++) {
+    for (let col = 0; col < 4; col++) {
+      const index = row * 21 + (currentCol + col);
+      displayPixels[index] = digit3[row * 4 + col];
+    }
+  }
+  currentCol += 4;
+
+  // 공백 - 1열
+  currentCol += 1;
+
+  // 네 번째 숫자 (분의 1의 자리) - 4열
+  const digit4 = getDigitPattern(timeChars[4]);
+  for (let row = 0; row < 7; row++) {
+    for (let col = 0; col < 4; col++) {
+      const index = row * 21 + (currentCol + col);
+      displayPixels[index] = digit4[row * 4 + col];
+    }
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-black">
+      <h1 className="text-4xl font-bold mb-8 text-green-400">디지털 시계</h1>
+      <div className="grid gap-1" style={{ gridTemplateColumns: 'repeat(21, minmax(0, 1fr))' }}>
+        {displayPixels.map((isActive, index) => (
+          <PixelClock
+            key={index}
+            isActive={isActive}
+            pixelIndex={index}
+            totalCols={21}
+            totalRows={7}
+            pixelMap={displayPixels}
+          />
+        ))}
+      </div>
+      <p className="mt-8 text-lg text-gray-400">현재 시간: {hours}:{minutes}</p>
+    </main>
   );
 }
