@@ -20,15 +20,15 @@ const valueBaseTimes: { [key: number]: number } = {};
 
 // 각 숫자 그룹의 시작 열 위치 (main 페이지용)
 const getDigitGroup = (col: number, totalCols: number): number | null => {
-  // test 페이지는 4x7 그리드이므로 항상 0 반환
+  // test 페이지는 4x6 그리드이므로 항상 0 반환
   if (totalCols === 4) return 0;
 
-  // main 페이지 (21x7 그리드)
-  if (col >= 0 && col < 4) return 0;
-  if (col >= 5 && col < 9) return 1;
-  if (col === 10) return null;
-  if (col >= 12 && col < 16) return 2;
-  if (col >= 17 && col < 21) return 3;
+  // main 페이지 (17x6 그리드) - 공백 없음
+  if (col >= 0 && col < 4) return 0;      // 첫 번째 숫자
+  if (col >= 4 && col < 8) return 1;      // 두 번째 숫자
+  if (col === 8) return null;              // 콜론
+  if (col >= 9 && col < 13) return 2;      // 세 번째 숫자
+  if (col >= 13 && col < 17) return 3;     // 네 번째 숫자
   return null;
 };
 
@@ -211,13 +211,13 @@ export default function PixelClock({ isActive, pixelIndex, totalCols, totalRows,
           strokeWidth="0.3"
         />
 
-        {/* 시침 - 위쪽 콜론(1행) 또는 숫자에만 표시 */}
-        {((isColon && isActive !== 0 && row === 1) || (isActive !== 0 && digitGroup !== null)) && (
+        {/* 시침 - 숫자 영역은 항상, 콜론 위쪽(1행)은 활성화시만 */}
+        {((isColon && isActive !== 0 && row === 1) || digitGroup !== null) && (
           <line
             x1="10"
             y1="10"
             x2="10"
-            y2={isActive !== 0 && digitGroup !== null ? "2" : "2"}
+            y2={isActive !== 0 && digitGroup !== null ? "2" : "6"}
             stroke="#F59E0B"
             strokeWidth="0.8"
             strokeLinecap="round"
@@ -225,13 +225,13 @@ export default function PixelClock({ isActive, pixelIndex, totalCols, totalRows,
           />
         )}
 
-        {/* 분침 - 위쪽 콜론(1행) 또는 숫자에만 표시 */}
-        {((isColon && isActive !== 0 && row === 1) || (isActive !== 0 && digitGroup !== null)) && (
+        {/* 분침 - 숫자 영역은 항상, 콜론 위쪽(1행)은 활성화시만 */}
+        {((isColon && isActive !== 0 && row === 1) || digitGroup !== null) && (
           <line
             x1="10"
             y1="10"
             x2="10"
-            y2={isActive !== 0 && digitGroup !== null ? "2" : "2"}
+            y2={isActive !== 0 && digitGroup !== null ? "2" : "4"}
             stroke="#FBBF24"
             strokeWidth="0.6"
             strokeLinecap="round"
