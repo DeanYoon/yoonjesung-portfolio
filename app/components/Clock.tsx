@@ -3,95 +3,66 @@
 import { useEffect, useState, useRef } from 'react';
 
 interface PixelClockProps {
-  isActive: boolean;
+  isActive: number; // 0 또는 1
   pixelIndex: number; // 픽셀 인덱스 (0-146)
   totalCols: number; // 전체 열 수 (21)
   totalRows: number; // 전체 행 수 (7)
-  pixelMap: boolean[]; // 전체 픽셀 맵
+  pixelMap: number[]; // 전체 픽셀 맵 (0 또는 1)
 }
 
-// 전역 기준 시간 (모든 시계가 공유)
+// 전역 기준 시간
 let globalBaseTime = Date.now();
 
-// 각 숫자 그룹의 시작 열 위치
-const getDigitGroup = (col: number): number | null => {
-  // 첫 번째 숫자: 0-3열
+// 각 숫자 값(0 또는 1)별 전역 시간 저장소
+// 같은 숫자 값을 가진 모든 시계는 동일한 시간 사용
+// isActive -> baseTime
+const valueBaseTimes: { [key: number]: number } = {};
+
+// 각 숫자 그룹의 시작 열 위치 (main 페이지용)
+const getDigitGroup = (col: number, totalCols: number): number | null => {
+  // test 페이지는 4x7 그리드이므로 항상 0 반환
+  if (totalCols === 4) return 0;
+
+  // main 페이지 (21x7 그리드)
   if (col >= 0 && col < 4) return 0;
-  // 두 번째 숫자: 5-8열
   if (col >= 5 && col < 9) return 1;
-  // 콜론: 10열
-  if (col === 10) return null; // 콜론은 제외
-  // 세 번째 숫자: 12-15열
+  if (col === 10) return null;
   if (col >= 12 && col < 16) return 2;
-  // 네 번째 숫자: 17-20열
   if (col >= 17 && col < 21) return 3;
-  return null; // 공백 영역
+  return null;
 };
 
-// 인접한 파란색 픽셀의 방향을 계산
-const getConnectedDirections = (
-  row: number,
-  col: number,
-  totalRows: number,
-  totalCols: number,
-  pixelMap: boolean[]
-): { hourAngle: number; minuteAngle: number } => {
-  const directions: number[] = [];
+// isActive 값에 따라 시침/분침 기본 각도 결정
+// 숫자 패턴이 곧 시계의 형태
+const valueToAngles = (isActive: number): { hourAngle: number; minuteAngle: number } => {
+  const up = (270 + 90) % 360;      // 0도 (12시)
+  const right = (0 + 90) % 360;      // 90도 (3시)
+  const down = (90 + 90) % 360;      // 180도 (6시)
+  const left = (180 + 90) % 360;     // 270도 (9시)
+  const defaultAngle = (270 - 210 + 90) % 360; // 7시 방향 (150도)
 
-  // 상 (위쪽) - SVG rotate는 시계 방향이므로 270도
-  if (row > 0) {
-    const upIndex = (row - 1) * totalCols + col;
-    if (pixelMap[upIndex]) {
-      directions.push(270); // 위쪽
-    }
+  if (isActive === 1) {
+    // 1: 시침 12시, 분침 6시
+    return { hourAngle: up, minuteAngle: down };
+  } else if (isActive === 2) {
+    // 2: 시침 3시, 분침 9시
+    return { hourAngle: right, minuteAngle: left };
+  } else if (isActive === 3) {
+    // 3: 시침 3시, 분침 6시
+    return { hourAngle: right, minuteAngle: down };
+  } else if (isActive === 4) {
+    // 4: 시침 9시, 분침 6시
+    return { hourAngle: left, minuteAngle: down };
+  } else if (isActive === 5) {
+    // 5: 시침 12시, 분침 3시
+    return { hourAngle: up, minuteAngle: right };
+  } else if (isActive === 6) {
+    // 6: 시침 9시, 분침 12시
+    return { hourAngle: left, minuteAngle: up };
+  } else {
+    // 0: 정지 또는 기본 위치
+    return { hourAngle: defaultAngle, minuteAngle: defaultAngle };
   }
-
-  // 하 (아래쪽) - SVG rotate는 시계 방향이므로 90도
-  if (row < totalRows - 1) {
-    const downIndex = (row + 1) * totalCols + col;
-    if (pixelMap[downIndex]) {
-      directions.push(90); // 아래쪽
-    }
-  }
-
-  // 좌 (왼쪽) - SVG rotate는 시계 방향이므로 180도
-  if (col > 0) {
-    const leftIndex = row * totalCols + (col - 1);
-    if (pixelMap[leftIndex]) {
-      directions.push(180); // 왼쪽
-    }
-  }
-
-  // 우 (오른쪽) - SVG rotate는 시계 방향이므로 0도
-  if (col < totalCols - 1) {
-    const rightIndex = row * totalCols + (col + 1);
-    if (pixelMap[rightIndex]) {
-      directions.push(0); // 오른쪽
-    }
-  }
-
-  // 각도에 180도를 더해서 시침과 분침이 올바른 방향을 향하도록 보정 (90도 추가)
-  const adjustedDirections = directions.map(dir => (dir + 90) % 360);
-
-  // 인접한 파란색 픽셀이 있으면 그 방향으로 향하도록
-  if (adjustedDirections.length >= 2) {
-    return {
-      hourAngle: adjustedDirections[0],
-      minuteAngle: adjustedDirections[1],
-    };
-  } else if (adjustedDirections.length === 1) {
-    // 하나만 있으면 시침만 사용, 분침은 반대 방향
-    return {
-      hourAngle: adjustedDirections[0],
-      minuteAngle: (adjustedDirections[0] + 180) % 360,
-    };
-  }
-
-  // 인접한 파란색 픽셀이 없으면 기본값 (랜덤 - 시침과 분침 각각 다른 각도)
-  return {
-    hourAngle: Math.random() * 360,
-    minuteAngle: Math.random() * 360,
-  };
 };
 
 // 각도 간의 최단 경로를 계산하는 함수
@@ -111,48 +82,28 @@ const angleDifference = (from: number, to: number): number => {
 export default function PixelClock({ isActive, pixelIndex, totalCols, totalRows, pixelMap }: PixelClockProps) {
   const [time, setTime] = useState(Date.now());
 
-  // 현재 각도 상태 (부드러운 전환을 위해)
-  // 초기 각도는 랜덤하게 설정 (시침과 분침 각각 다름)
-  const currentHourAngleRef = useRef<number>(Math.random() * 360);
-  const currentMinuteAngleRef = useRef<number>(Math.random() * 360);
-
-  // 파란 배경이 아닐 때 시작할 각도 (마지막으로 멈춰있던 각도)
-  const startHourAngleRef = useRef<number | null>(null);
-  const startMinuteAngleRef = useRef<number | null>(null);
-
-  // 파란 배경이 아니게 되었을 때의 시간 기록
-  const inactiveStartTimeRef = useRef<number | null>(null);
-
   // 픽셀의 행과 열 위치 계산
   const row = Math.floor(pixelIndex / totalCols);
   const col = pixelIndex % totalCols;
-  const digitGroup = getDigitGroup(col);
+  const digitGroup = getDigitGroup(col, totalCols);
 
-  // 파란색 픽셀인 경우 인접한 파란색 픽셀 방향 계산
-  const connectedDirections = isActive && digitGroup !== null
-    ? getConnectedDirections(row, col, totalRows, totalCols, pixelMap)
-    : { hourAngle: 0, minuteAngle: 0 };
-
-  // 시침과 분침 각각 다른 랜덤 오프셋 생성
-  // 파란색 픽셀인 경우에만 사용
-  const hourOffsetRef = useRef<number>(Math.random() * 360);
-  const minuteOffsetRef = useRef<number>(Math.random() * 360);
-
-  const lastTimeRef = useRef<number>(Date.now());
-  const prevFrameTimeRef = useRef<number>(Date.now());
-
+  // 같은 숫자 값(isActive)을 가진 모든 시계가 동일한 시간을 사용하도록 값별 기준 시간 초기화
   useEffect(() => {
-    // 첫 마운트 시 전역 기준 시간 초기화
-    if (digitGroup === 0) {
+    if (!valueBaseTimes[isActive]) {
+      valueBaseTimes[isActive] = Date.now();
+    }
+  }, [isActive]);
+
+  // 전역 시간 업데이트
+  useEffect(() => {
+    if (digitGroup === 0 || (totalCols === 4)) {
       globalBaseTime = Date.now();
     }
 
     let animationFrameId: number;
 
     const updateTime = () => {
-      const now = Date.now();
-      lastTimeRef.current = now;
-      setTime(now);
+      setTime(Date.now());
       animationFrameId = requestAnimationFrame(updateTime);
     };
 
@@ -161,124 +112,146 @@ export default function PixelClock({ isActive, pixelIndex, totalCols, totalRows,
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [digitGroup]);
+  }, [digitGroup, totalCols]);
 
-  // isActive 변경 감지: 파란 배경이 아니게 되었을 때 시작 각도 설정
-  const prevIsActiveRef = useRef<boolean>(isActive);
-
-  useEffect(() => {
-    // 파란 배경이 아니게 되었을 때, 현재 각도를 시작 각도로 설정
-    if ((!isActive || digitGroup === null) && inactiveStartTimeRef.current === null) {
-      startHourAngleRef.current = currentHourAngleRef.current;
-      startMinuteAngleRef.current = currentMinuteAngleRef.current;
-      inactiveStartTimeRef.current = Math.max(0, (Date.now() - globalBaseTime) / 1000);
-    }
-
-    // 파란 배경이 되었을 때 시작 시간 기록 초기화 (다음에 검은 배경이 될 때를 위해)
-    if (isActive && digitGroup !== null && prevIsActiveRef.current !== isActive) {
-      inactiveStartTimeRef.current = null;
-      startHourAngleRef.current = null;
-      startMinuteAngleRef.current = null;
-    }
-
-    prevIsActiveRef.current = isActive;
-  }, [isActive, digitGroup]);
-
-  // 경과 시간 계산 (초 단위, 소수점 포함)
-  // 모든 시계가 같은 기준 시간 사용
-  const totalSeconds = Math.max(0, (time - globalBaseTime) / 1000);
-
-  // 시간 배율: 실제 시간보다 빠르게 (5배 빠름)
-  const speedMultiplier = 5;
-  const virtualSeconds = totalSeconds * speedMultiplier;
-
-  // 목표 각도 계산
+  // 콜론인 경우 실제 현재 시간 계산
+  const isColon = digitGroup === null;
   let targetHourAngle: number;
   let targetMinuteAngle: number;
+  let targetSecondAngle: number = 0;
 
-  if (isActive && digitGroup !== null) {
-    // 파란색 픽셀: 인접한 파란색 픽셀 방향으로 고정 (연결 상태)
-    targetHourAngle = connectedDirections.hourAngle;
-    targetMinuteAngle = connectedDirections.minuteAngle;
+  if (isColon && isActive !== 0) {
+    // 콜론이고 활성화된 경우: 실제 현재 시간 표시
+    const now = new Date(time);
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const seconds = now.getSeconds();
+
+    // 시침: 12시간 기준, 분과 초도 고려
+    // 1시간 = 30도, 1분 = 0.5도
+    // 0도가 위쪽(12시)이므로 계산된 각도를 그대로 사용
+    const hourAngleValue = (hours % 12) * 30 + minutes * 0.5;
+
+    // 분침: 60분 기준, 초도 고려
+    // 1분 = 6도, 1초 = 0.1도
+    // 0도가 위쪽(12시)이므로 계산된 각도를 그대로 사용
+    const minuteAngleValue = minutes * 6 + seconds * 0.1;
+
+    // 초침: 60초 기준
+    // 1초 = 6도
+    const secondAngleValue = seconds * 6;
+
+    targetHourAngle = normalizeAngle(hourAngleValue);
+    targetMinuteAngle = normalizeAngle(minuteAngleValue);
+    targetSecondAngle = normalizeAngle(secondAngleValue);
   } else {
-    // 검은색 픽셀: 시계 7시 방향을 가리킴
-    // 12시 = 270도 (보정 전), 7시는 12시에서 210도 시계방향 회전 = 60도 (보정 전)
-    // 보정 후 = 60 + 90 = 150도
-    // 하지만 코드에서 위쪽이 270도이고 보정이 +90도이므로
-    // 시계 7시 = 270 - 210 = 60도 (보정 전) = 150도 (보정 후)
-    const sevenOClockAngle = (270 - 210 + 90) % 360; // 150도
-    targetHourAngle = sevenOClockAngle;
-    targetMinuteAngle = sevenOClockAngle;
+    // 숫자 패턴: isActive 값에 따라 기본 각도 결정
+    const baseAngles = valueToAngles(isActive);
+    targetHourAngle = baseAngles.hourAngle;
+    targetMinuteAngle = baseAngles.minuteAngle;
   }
 
+  // 현재 각도 상태 (부드러운 전환을 위해)
+  const currentHourAngleRef = useRef<number>(targetHourAngle);
+  const currentMinuteAngleRef = useRef<number>(targetMinuteAngle);
+  const currentSecondAngleRef = useRef<number>(targetSecondAngle);
+  const prevFrameTimeRef = useRef<number>(Date.now());
+
   // 부드러운 각도 전환 (보간)
-  // 시침과 분침이 같은 속도로 움직임 (느리게)
-  // 10초에 360도 = 1초에 36도 * speedMultiplier(5) = 180도/초 (가상 시간)
-  // 속도를 더 느리게: 180도/초 * 0.3 = 54도/초
-  const angleSpeedPerSecond = 180 * 0.3; // 더 느린 속도 (54도/초)
+  const angleSpeedPerSecond = 180 * 0.3; // 54도/초
 
   // deltaTime을 사용해서 프레임 레이트와 관계없이 정확한 속도로 움직임
-  const deltaTime = Math.max(0, Math.min((time - prevFrameTimeRef.current) / 1000, 0.1)); // 초 단위, 최대 0.1초로 제한
+  const deltaTime = Math.max(0, Math.min((time - prevFrameTimeRef.current) / 1000, 0.1));
   prevFrameTimeRef.current = time;
 
-  // 프레임당 최대 움직임 (초당 속도 * deltaTime)
-  // 시침과 분침이 같은 속도로 움직임
+  // 프레임당 최대 움직임
   const maxAnglePerFrame = angleSpeedPerSecond * deltaTime;
 
   const currentHour = currentHourAngleRef.current;
   const currentMinute = currentMinuteAngleRef.current;
+  const currentSecond = currentSecondAngleRef.current;
 
-  // 항상 부드럽게 전환되도록 처리
+  // 부드럽게 전환되도록 처리
   const hourDiff = angleDifference(currentHour, targetHourAngle);
   const minuteDiff = angleDifference(currentMinute, targetMinuteAngle);
+  const secondDiff = isColon && isActive !== 0
+    ? angleDifference(currentSecond, targetSecondAngle)
+    : 0;
 
-  // 각도 차이를 속도로 제한 (시침과 분침 동일)
+  // 각도 차이를 속도로 제한
   const hourMovement = Math.max(-maxAnglePerFrame, Math.min(maxAnglePerFrame, hourDiff));
   const minuteMovement = Math.max(-maxAnglePerFrame, Math.min(maxAnglePerFrame, minuteDiff));
+  const secondMovement = isColon && isActive !== 0
+    ? Math.max(-maxAnglePerFrame, Math.min(maxAnglePerFrame, secondDiff))
+    : 0;
 
   const hourAngle = normalizeAngle(currentHour + hourMovement);
   const minuteAngle = normalizeAngle(currentMinute + minuteMovement);
+  const secondAngle = isColon && isActive !== 0
+    ? normalizeAngle(currentSecond + secondMovement)
+    : 0;
 
   // ref 업데이트
   currentHourAngleRef.current = hourAngle;
   currentMinuteAngleRef.current = minuteAngle;
+  if (isColon && isActive !== 0) {
+    currentSecondAngleRef.current = secondAngle;
+  }
 
   return (
-    <div className="relative inline-block">
+    <div className="relative inline-block hover:brightness-150 transition-all duration-200 cursor-pointer">
       <svg width="50" height="50" viewBox="0 0 20 20" className="relative">
-        {/* 원형 시계 배경 - 반 고흐 '별이 빛나는 밤' 색상 */}
+        {/* 원형 시계 배경 - 콜론은 색상 있음 */}
         <circle
           cx="10"
           cy="10"
           r="9"
-          fill={isActive ? "#2C5282" : "#0F172A"}
-          stroke={isActive ? "#3B82F6" : "#1E293B"}
+          fill={isActive !== 0 && digitGroup === null ? "#2C5282" : "#0F172A"}
+          stroke={isActive !== 0 && digitGroup === null ? "#3B82F6" : "#1E293B"}
           strokeWidth="0.3"
         />
 
-        {/* 시침 - 반 고흐 작품의 금색/노란색 */}
-        <line
-          x1="10"
-          y1="10"
-          x2="10"
-          y2={isActive && digitGroup !== null ? "2" : "6"}
-          stroke="#F59E0B"
-          strokeWidth="0.8"
-          strokeLinecap="round"
-          transform={`rotate(${hourAngle} 10 10)`}
-        />
+        {/* 시침 - 위쪽 콜론(1행) 또는 숫자에만 표시 */}
+        {((isColon && isActive !== 0 && row === 1) || (isActive !== 0 && digitGroup !== null)) && (
+          <line
+            x1="10"
+            y1="10"
+            x2="10"
+            y2={isActive !== 0 && digitGroup !== null ? "2" : "2"}
+            stroke="#F59E0B"
+            strokeWidth="0.8"
+            strokeLinecap="round"
+            transform={`rotate(${hourAngle} 10 10)`}
+          />
+        )}
 
-        {/* 분침 - 반 고흐 작품의 금색/노란색 */}
-        <line
-          x1="10"
-          y1="10"
-          x2="10"
-          y2={isActive && digitGroup !== null ? "2" : "4"}
-          stroke="#FBBF24"
-          strokeWidth="0.6"
-          strokeLinecap="round"
-          transform={`rotate(${minuteAngle} 10 10)`}
-        />
+        {/* 분침 - 위쪽 콜론(1행) 또는 숫자에만 표시 */}
+        {((isColon && isActive !== 0 && row === 1) || (isActive !== 0 && digitGroup !== null)) && (
+          <line
+            x1="10"
+            y1="10"
+            x2="10"
+            y2={isActive !== 0 && digitGroup !== null ? "2" : "2"}
+            stroke="#FBBF24"
+            strokeWidth="0.6"
+            strokeLinecap="round"
+            transform={`rotate(${minuteAngle} 10 10)`}
+          />
+        )}
+
+        {/* 초침 - 아래쪽 콜론(4행)에만 표시 */}
+        {isColon && isActive !== 0 && row === 4 && (
+          <line
+            x1="10"
+            y1="10"
+            x2="10"
+            y2="1.5"
+            stroke="#EF4444"
+            strokeWidth="0.4"
+            strokeLinecap="round"
+            transform={`rotate(${secondAngle} 10 10)`}
+          />
+        )}
 
         {/* 중심점 - 반 고흐 작품의 금색 */}
         <circle

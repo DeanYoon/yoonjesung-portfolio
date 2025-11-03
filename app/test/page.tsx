@@ -3,101 +3,91 @@
 import { useState } from 'react';
 import PixelClock from '../components/Clock';
 
-// 4x7 그리드로 숫자 패턴 정의 (7-segment 스타일)
-const digitPatterns: { [key: string]: boolean[] } = {
+// 4x6 그리드로 숫자 패턴 정의 (7-segment 스타일)
+const digitPatterns: { [key: string]: number[] } = {
   '0': [
-    true, true, true, true,
-    true, false, false, true,
-    true, false, false, true,
-    true, false, false, true,
-    true, false, false, true,
-    true, false, false, true,
-    true, true, true, true,
+    3, 2, 2, 4,
+    1, 3, 4, 1,
+    1, 1, 1, 1,
+    1, 1, 1, 1,
+    1, 5, 6, 1,
+    5, 2, 2, 6,
   ],
   '1': [
-    false, false, true, false,
-    false, true, true, false,
-    false, false, true, false,
-    false, false, true, false,
-    false, false, true, false,
-    false, false, true, false,
-    false, true, true, true,
+    3, 2, 4, 0,
+    5, 4, 1, 0,
+    0, 1, 1, 0,
+    0, 1, 1, 0,
+    3, 6, 5, 4,
+    5, 2, 2, 6,
   ],
   '2': [
-    true, true, true, true,
-    false, false, false, true,
-    false, false, false, true,
-    true, true, true, true,
-    true, false, false, false,
-    true, false, false, false,
-    true, true, true, true,
+    3, 2, 2, 4,
+    5, 2, 4, 1,
+    3, 2, 6, 1,
+    1, 3, 2, 6,
+    1, 5, 2, 4,
+    5, 2, 2, 6,
   ],
   '3': [
-    true, true, true, true,
-    false, false, false, true,
-    false, false, false, true,
-    true, true, true, true,
-    false, false, false, true,
-    false, false, false, true,
-    true, true, true, true,
+    3, 2, 2, 4,
+    5, 2, 4, 1,
+    3, 2, 6, 1,
+    5, 2, 4, 1,
+    3, 2, 6, 1,
+    5, 2, 2, 6,
   ],
   '4': [
-    true, false, false, true,
-    true, false, false, true,
-    true, false, false, true,
-    true, true, true, true,
-    false, false, false, true,
-    false, false, false, true,
-    false, false, false, true,
+    3, 4, 3, 4,
+    1, 1, 1, 1,
+    1, 5, 6, 1,
+    5, 2, 4, 1,
+    0, 0, 1, 1,
+    0, 0, 5, 6,
   ],
   '5': [
-    true, true, true, true,
-    true, false, false, false,
-    true, false, false, false,
-    true, true, true, true,
-    false, false, false, true,
-    false, false, false, true,
-    true, true, true, true,
+    3, 2, 2, 4,
+    1, 3, 2, 6,
+    1, 5, 2, 4,
+    5, 2, 4, 1,
+    3, 2, 6, 1,
+    5, 2, 2, 6,
   ],
   '6': [
-    true, true, true, true,
-    true, false, false, false,
-    true, false, false, false,
-    true, true, true, true,
-    true, false, false, true,
-    true, false, false, true,
-    true, true, true, true,
+    3, 2, 2, 4,
+    1, 3, 2, 6,
+    1, 5, 2, 4,
+    1, 3, 4, 1,
+    1, 5, 6, 1,
+    5, 2, 2, 6,
   ],
   '7': [
-    true, true, true, true,
-    false, false, false, true,
-    false, false, false, true,
-    false, false, false, true,
-    false, false, false, true,
-    false, false, false, true,
-    false, false, false, true,
+    3, 2, 2, 4,
+    1, 3, 4, 1,
+    5, 6, 1, 1,
+    0, 0, 1, 1,
+    0, 0, 1, 1,
+    0, 0, 5, 6,
   ],
   '8': [
-    true, true, true, true,
-    true, false, false, true,
-    true, false, false, true,
-    true, true, true, true,
-    true, false, false, true,
-    true, false, false, true,
-    true, true, true, true,
+    3, 2, 2, 4,
+    1, 3, 4, 1,
+    1, 5, 6, 1,
+    1, 3, 4, 1,
+    1, 5, 6, 1,
+    5, 2, 2, 6,
   ],
   '9': [
-    true, true, true, true,
-    true, false, false, true,
-    true, false, false, true,
-    true, true, true, true,
-    false, false, false, true,
-    false, false, false, true,
-    true, true, true, true,
+    3, 2, 2, 4,
+    1, 3, 4, 1,
+    1, 5, 6, 1,
+    5, 2, 4, 1,
+    3, 2, 6, 1,
+    5, 2, 2, 6,
   ],
 };
 
-function getDigitPattern(digit: string): boolean[] {
+function getDigitPattern(digit: string): number[] {
   return digitPatterns[digit] || [];
 }
 
@@ -108,14 +98,14 @@ export default function TestPage() {
     setCurrentDigit((prev) => (prev + 1) % 10);
   };
 
-  // 4x7 그리드 (총 28개)
-  const displayPixels: boolean[] = new Array(28).fill(false);
+  // 4x6 그리드 (총 24개)
+  const displayPixels: number[] = new Array(24).fill(0);
 
   // 현재 숫자 패턴 가져오기
   const digitPattern = getDigitPattern(currentDigit.toString());
 
   // 패턴을 displayPixels에 적용
-  for (let row = 0; row < 7; row++) {
+  for (let row = 0; row < 6; row++) {
     for (let col = 0; col < 4; col++) {
       const index = row * 4 + col;
       displayPixels[index] = digitPattern[row * 4 + col];
@@ -132,7 +122,7 @@ export default function TestPage() {
             isActive={isActive}
             pixelIndex={index}
             totalCols={4}
-            totalRows={7}
+            totalRows={6}
             pixelMap={displayPixels}
           />
         ))}
