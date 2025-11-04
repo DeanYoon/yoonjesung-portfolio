@@ -3,7 +3,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Dean Yoon - Creative Frontend Developer | Innovative Pixel Clock Portfolio",
-  description: "Discover Dean Yoon's innovative portfolio featuring a revolutionary pixel clock interface where analog clocks form digital numbers. Experience creative frontend development with Next.js, TypeScript, and interactive animations.",
+  description:
+    "Discover Dean Yoon's innovative portfolio featuring a revolutionary pixel clock interface where analog clocks form digital numbers. Experience creative frontend development with Next.js, TypeScript, and interactive animations.",
   keywords: [
     "frontend developer",
     "creative developer",
@@ -18,25 +19,25 @@ export const metadata: Metadata = {
     "creative coding",
     "Dean Yoon",
     "web animations",
-    "modern web development"
+    "modern web development",
   ],
   authors: [{ name: "Dean Yoon", url: "https://github.com/DeanYoon" }],
   creator: "Dean Yoon",
   publisher: "Dean Yoon",
   category: "Technology",
   classification: "Portfolio Website",
-  
-  // Open Graph metadata for social media sharing
+
   openGraph: {
     type: "website",
     locale: "en_US",
     url: "https://nextjs-boilerplate-eight-sable-95.vercel.app",
     title: "Dean Yoon - Innovative Pixel Clock Portfolio",
-    description: "Experience a revolutionary digital interface where analog clocks form numbers. Creative frontend development showcase.",
+    description:
+      "Experience a revolutionary digital interface where analog clocks form numbers. Creative frontend development showcase.",
     siteName: "Dean Yoon Portfolio",
     images: [
       {
-        url: "/og-image.png", // Note: This image needs to be created
+        url: "/og-image.png",
         width: 1200,
         height: 630,
         alt: "Dean Yoon's Pixel Clock Portfolio - Innovative Digital Interface",
@@ -44,33 +45,46 @@ export const metadata: Metadata = {
       },
     ],
   },
-  
-  // Twitter Card metadata
+
   twitter: {
     card: "summary_large_image",
-    site: "@DeanYoon", // Update with actual Twitter handle if available
+    site: "@DeanYoon",
     creator: "@DeanYoon",
     title: "Dean Yoon - Creative Frontend Developer",
-    description: "Revolutionary pixel clock interface where analog clocks create digital numbers. Innovative portfolio showcase.",
-    images: ["/twitter-image.png"], // Note: This image needs to be created
+    description:
+      "Revolutionary pixel clock interface where analog clocks create digital numbers. Innovative portfolio showcase.",
+    images: ["/twitter-image.png"],
   },
-  
-  // Additional metadata
+
   viewport: {
     width: "device-width",
     initialScale: 1,
     maximumScale: 5,
     userScalable: true,
   },
-  
+
+  // Set favicon and icons
+  icons: {
+    icon: [
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon.ico" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    other: [
+      { rel: "manifest", url: "/site.webmanifest" },
+      { rel: "mask-icon", url: "/logo.svg", color: "#B3B3B3" },
+      { rel: "shortcut icon", url: "/favicon.ico" },
+    ],
+  },
+
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f59e0b" },
+    { media: "(prefers-color-scheme: light)", color: "#B3B3B3" },
     { media: "(prefers-color-scheme: dark)", color: "#1e293b" },
   ],
-  
+
   colorScheme: "dark light",
-  
-  // Robots and indexing
+
   robots: {
     index: true,
     follow: true,
@@ -82,37 +96,26 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-  
-  // Additional verification and canonical
-  verification: {
-    // google: "google-site-verification-code", // Add when available
-    // yandex: "yandex-verification-code", // Add when available  
-    // yahoo: "yahoo-site-verification-code", // Add when available
-  },
-  
+
+  verification: {},
+
   alternates: {
     canonical: "https://nextjs-boilerplate-eight-sable-95.vercel.app",
   },
-  
-  // App-specific metadata
+
   applicationName: "Dean Yoon Portfolio",
   referrer: "origin-when-cross-origin",
-  
-  // Format detection
+
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
-  
-  // Additional structured data will be added via JSON-LD in the future
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
       <head>
@@ -125,12 +128,10 @@ export default function RootLayout({
               "@type": "Person",
               name: "Dean Yoon",
               jobTitle: "Frontend Developer",
-              description: "Creative frontend developer specializing in innovative user interfaces and interactive web applications",
+              description:
+                "Creative frontend developer specializing in innovative user interfaces and interactive web applications",
               url: "https://nextjs-boilerplate-eight-sable-95.vercel.app",
-              sameAs: [
-                "https://github.com/DeanYoon",
-                // Add other social media profiles when available
-              ],
+              sameAs: ["https://github.com/DeanYoon"],
               knowsAbout: [
                 "Frontend Development",
                 "React",
@@ -139,23 +140,15 @@ export default function RootLayout({
                 "JavaScript",
                 "Web Animations",
                 "User Interface Design",
-                "Creative Coding"
+                "Creative Coding",
               ],
-              alumniOf: {
-                "@type": "EducationalOrganization",
-                name: "Hanyang University"
-              },
-              worksFor: {
-                "@type": "Organization",
-                name: "NC Japan"
-              }
-            })
+              alumniOf: { "@type": "EducationalOrganization", name: "Hanyang University" },
+              worksFor: { "@type": "Organization", name: "NC Japan" },
+            }),
           }}
         />
       </head>
-      <body className="antialiased">
-        {children}
-      </body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }
