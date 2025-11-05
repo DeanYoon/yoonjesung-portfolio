@@ -9,6 +9,9 @@
 
 ## 🕐 このポートフォリオについて（簡単に）
 Next.js 製のインタラクティブなピクセル・クロック。アナログ時計が並んでデジタル時刻を形成します。
+このポートフォリオは、インタラクティブで創造的なアプローチを通じて、私のフロントエンド開発スキルを紹介しています。
+
+**🔗 ライブデモ**: [https://jesung-portfolio.vercel.app/](https://jesung-portfolio.vercel.app/)
 
 ```bash
 npm install && npm run dev
