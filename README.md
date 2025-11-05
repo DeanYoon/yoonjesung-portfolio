@@ -9,6 +9,9 @@
 
 ## 🕐 This Portfolio
 Interactive pixel clock built with Next.js - analog clocks form digital time.
+This portfolio showcases my frontend development skills through an interactive and creative approach.
+
+**🔗 Live Demo**: [https://jesung-portfolio.vercel.app/](https://jesung-portfolio.vercel.app/)
 
 ```bash
 npm install && npm run dev
